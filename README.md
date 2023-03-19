@@ -1,4 +1,5 @@
 # RAD-Shopping-Cart
+Read full paper: [RAD-Shopping-Cart-IEEE-Final-Paper.pdf](https://github.com/Jarhatz/RAD-Shopping-Cart/files/11010421/RAD-Shopping-Cart-IEEE-Final-Paper.pdf)
 ## Abstract
 RAD Shopping Cart is an IOT shopping cart, which can follow the user through an aisle, and allow for product lookup through a touchscreen LCD. This project is useful since it simplifies the shopping experience for senior citizens and people with disabilities — both of whom struggle physically pushing around a shopping cart, as well as allowing for an accessible and straightforward item lookup at any point of time. The cart uses a network of three ESP8266 Wi-Fi modules to triangulate a user’s location. In addition, the cart uses HC-SRO4 Ultrasonic Sensors in the front, and the sides to allow for lane correction and object avoidance.
 
@@ -74,4 +75,46 @@ To circumvent this problem, a queue data structure (Fig. 5) is used for each ESP
 
 To determine the user’s direction, a simple approach was used using the normalized values for the front, back-left, and back-right ESP8266 modules. The normalized values returned from each of the front, back-left, and back-right RSSI queues is systematically and conditionally checked to get the two-dimensional direction of the user. If the RSSI for the front is less than the back-left and back-right RSSI values, it means that the user is closer to the front, indicating that the shopping cart should move forward, and vice versa. If the front and back RSSI values are below the threshold 40 dB, this indicates that the cart is already at a very close proximity to the user which does not require any motor movement.
 
-# Finite State Machine
+## Finite State Machine
+The main procedure dictating the state of the automated system of the RAD Shopping Cart can be displayed as a Finite State Machine (FSM). In essence, this control structure serves to facilitate and handle possible scenarios and cases revolving around the user of the cart. The aggregate of multiple peripherals embedded to the shopping cart help arrive at a next action and eventually, a final state. 
+
+### Mealy Machine
+The program’s overall control-loop from the main module dictates the different possible environment conditions and user-cases. These scenarios are mapped out in software to facilitate the shopping cart’s movement, features, etc. Specifically, this FSM is a Mealy machine, which means that the states switch not only when based on the changes that occur within the state, but also by user input [5]. The key feature that makes this a Mealy machine is the item-lookup feature which requires that the user input an item into the search bar in the LCD user interface to find items. The Mealy Machine involves the user input which is granted through the embedded touchscreen LCD.
+
+![image](https://user-images.githubusercontent.com/69876697/226159153-02413c65-3bd7-4e00-a98a-5d458382d1a0.png)
+
+RAD Shopping Cart’s mealy machine uses a rudimentary finite state machine for a general-purpose autonomous vehicle as a reference for the potential states that are needed for an autonomous vehicle [6]. The design is more simplified and adapts to all the potential use cases and states that our shopping cart would possibly need.
+
+## User Interface
+The mealy machine described above revolves around the Nextion TFT LCD which prompts user input and also toggles the movement capabilities of RAD Shopping Cart. The LCD starts The LCD allows for powering the shopping cart on, pairing the user’s phone, following and tracking the user’s RSSI values in real-time.
+
+![image](https://user-images.githubusercontent.com/69876697/226159185-847759ae-f0d2-4397-834f-621b61d18889.png)
+
+In the following images above (Fig. 8), the Nextion LCD serves as the event handler for the Mega2560, the ESP8266, and the motor controller all through touch events from buttons and pages. Upon startup, the cart starts with its power set to OFF which is enabled to ON when the user starts the cart from the Power page. Subsequently on the User page, the user has the option to pair their cellular phone with RAD Shopping Cart by typing in their user SSID and password. The submit request from that page, induces the serial communication between the Nextion LCD → Arduino Mega 2560 → ESP8266 modules. The Store page allows the user to view and search for specific products and their respective locations in the store which is reflected on the LCD’s user interface. Finally, the Drive page is responsible for motor movements and viewing the RSSI readings in real time. The button “Follow” enables the cart to follow the user using the the WiFi tracking algorithm while the button “Track” enlists detailed information about RAD Shopping Cart’s RSSI readings and sensor readings which can be seen in the Fig. 9.
+
+![image](https://user-images.githubusercontent.com/69876697/226159197-00f1b73c-e757-4ac4-b00b-3ec5943540ca.png)
+
+### Ultrasonic Range Sensors
+A baseline algorithm for collision avoidance can be developed by configuring the ultrasonic sensors. The ultrasonic sensors use a pulse of 4 ultrasonic waves within 100ms to determine distance by measuring the time between the creation of the pulse and the time when the pulse is reflected. The HC-SR04 ultrasonic range sensor that we are using accurately returns the time it takes for the ultrasonic sound wave to return to the receiver [7]. This time value can be converted into distance using the following formula:
+
+![image](https://user-images.githubusercontent.com/69876697/226159225-98b1b02d-ccb1-4f69-971d-36a925614d78.png)
+
+The collision detection feature is implemented using ultrasonic sensors because it will communicate information to the FSM which instructs the cart to “move” or “rest” if within ~3 meters of the user. This ensures the safety of our users and others while preventing any sort of potential collisions.
+
+The ultrasonic sensor also is responsible for lane correction which utilizes the sensor on the right side of the cart which calculates the distance from the aisle’s shelf. This distance value is used to keep the cart calibrated to the right side of the aisle and prevent it from veering in certain directions. Along with the motor controller’s actions, the cart stays in a straight path and corrects its trajectory.
+
+### Motor Controls
+The movement for the RAD Shopping Cart involves functional motor controls such as moving forward, moving backward, making 180° turns, and 90° turns. The motor controller is a crucial component responsible for facilitating the motor speeds and the motor direction for the shopping cart. In addition with the right ultrasonic sensor’s readings, the motor controller consistently commands the left motor to spin at a higher speed and tunes the right motor’s speed to correct its lane trajectory which is how forward movement is made possible.
+
+### Store Database
+Store inventory and products can be found through the built-in LED on the cart which reads information from one primary ESP8266 on the cart. The front ESP8266 on the cart has a priority to read from the database and transmit the content as a bitstream of a JSON object to the Mega2560 which parses and prints the content on the store page of the LCD.
+
+![image](https://user-images.githubusercontent.com/69876697/226159259-f2f947b1-b018-4335-859f-2b11cb0c06d6.png)
+
+The database is made through Google Cloud’s Firebase (Fig. 11) which allows for initializing a generic grocery store item list. For instance, items such as peanut butter, milk, etc. can be searched and discovered with the corresponding attributes such as aisle number and availability. A Flask RESTful server acts as an intermediate host API to handle HTTP Post/Get requests. This was done through Python and was hosted on a versatile, personal computer.
+
+## Summary
+RAD Shopping Cart is a project consisting of research and development for an IoT shopping cart which includes four primary features: (1) user-following (2) collision-detection (3) lane-correction (4) item-lookup. This project is useful since it simplifies the shopping experience for senior citizens and people with disabilities who struggle physically pushing around a shopping cart, and allows for an accessible, straightforward item lookup. The hardware assembly laid out the foundation for the user-tracking, as well as allowed for each of the critical components for the FSM, which dictates the functionality of the entire project.
+
+## Conclusion
+Smart, autonomous shopping carts are the future. They provide a valuable utility not only for ordinary shoppers, but also to senior citizens and people with disabilities by providing a less-physically intensive way to shop, as well as a more streamlined, efficient shopping experience. In addition, smart shopping carts provide utility to shop owners as well since they can gather data from item-lookups about which items are in demand, which items are in stock, etc. This project is a simple application of the capabilities of autonomous shopping carts since it just implements the four key features described in the introduction, however, by expanding on this project to include self-parking, self-charging, advanced user-following, easier pairing with the shopping cart via Bluetooth, data analysis from item-lookup data, to even having games within the LCD tablet to keep children occupied, the applications of smart shopping carts are seemingly endless. Overall, smart shopping carts are still not the norm, thus, more research should be done to implement more features to provide more value to shop owners and consumers alike, and to bring the manufacturing costs down to make smart shopping carts practical.
